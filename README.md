@@ -1,6 +1,3 @@
-Here's a description for your GitHub repository:
-
----
 
 # 🎨 DoodleIt - Flutter Mobile App
 
