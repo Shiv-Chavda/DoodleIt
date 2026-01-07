@@ -33,8 +33,8 @@ This repository contains a Flutter-based mobile application that serves as a mob
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/manansanghani69/skribble.io.git
-   cd skribble.io
+   git clone https://github.com/Shiv-Chavda/DoodleIt.git
+   cd DoodleIt
    ```
 
 2. **Install dependencies:**
