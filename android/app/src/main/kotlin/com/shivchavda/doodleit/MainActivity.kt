@@ -1,4 +1,4 @@
-package com.example.skribble_io
+package com.shivchavda.doodleit
 
 import io.flutter.embedding.android.FlutterActivity
 

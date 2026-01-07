@@ -41,6 +41,7 @@ class _PaintScreenState extends State<PaintScreen> {
   Color selectedColor = Colors.black;
   double opacity = 1;
   double strokeWidth = 2;
+  bool isEraser = false;
   List<Widget> textBlankWidget = [];
   ScrollController _scrollController = ScrollController();
   List<Map> messages = [];
@@ -149,6 +150,18 @@ class _PaintScreenState extends State<PaintScreen> {
         //on painting the screen
         _socket.on('points', (point) {
           if (point['details'] != null) {
+            // Get color from the point data
+            Color pointColor = selectedColor;
+            double pointStrokeWidth = strokeWidth;
+            
+            if (point['color'] != null) {
+              int value = int.parse(point['color'], radix: 16);
+              pointColor = Color(value);
+            }
+            if (point['strokeWidth'] != null) {
+              pointStrokeWidth = point['strokeWidth'].toDouble();
+            }
+            
             setState(() {
               points.add(
                 TouchPoints(
@@ -159,8 +172,8 @@ class _PaintScreenState extends State<PaintScreen> {
                   paint: Paint()
                     ..strokeCap = strokeType
                     ..isAntiAlias = true
-                    ..strokeWidth = strokeWidth
-                    ..color = selectedColor.withOpacity(opacity),
+                    ..strokeWidth = pointStrokeWidth
+                    ..color = pointColor.withOpacity(opacity),
                 ),
               );
             });
@@ -178,6 +191,8 @@ class _PaintScreenState extends State<PaintScreen> {
         Color otherColor = Color(value);
         setState(() {
           selectedColor = otherColor;
+          // Update eraser state based on color
+          isEraser = (otherColor == Colors.white);
         });
       });
 
@@ -201,11 +216,6 @@ class _PaintScreenState extends State<PaintScreen> {
           messages.add(data);
           guessedUserCtr = data['guessedUserCtr'];
         });
-        //on guessed by all the users
-        if (dataOfRoom?['players'] is List &&
-            guessedUserCtr == dataOfRoom!['players'].length - 1) {
-          _socket.emit('change-turn', dataOfRoom?['name']);
-        }
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 40,
           duration: const Duration(milliseconds: 20),
@@ -323,6 +333,10 @@ class _PaintScreenState extends State<PaintScreen> {
                   child: BlockPicker(
                       pickerColor: selectedColor,
                       onColorChanged: (color) {
+                        setState(() {
+                          selectedColor = color;
+                          isEraser = false;
+                        });
                         String colorString = color.toString();
                         String valueString =
                             colorString.split('(0x')[1].split(')')[0];
@@ -401,30 +415,38 @@ class _PaintScreenState extends State<PaintScreen> {
                               width: width,
                               height: height * .55,
                               child: GestureDetector(
-                                onPanStart: (details) {
+                                onPanStart: dataOfRoom?['turn']?['nickname'] == (widget.data['nickname'] ?? 'Guest') ? (details) {
+                                  String colorString = selectedColor.toString();
+                                  String valueString = colorString.split('(0x')[1].split(')')[0];
                                   _socket.emit('paint', {
                                     'details': {
                                       'dx': details.localPosition.dx,
                                       'dy': details.localPosition.dy,
                                     },
+                                    'color': valueString,
+                                    'strokeWidth': strokeWidth,
                                     'roomName': widget.data['name'],
                                   });
-                                },
-                                onPanUpdate: (details) {
+                                } : null,
+                                onPanUpdate: dataOfRoom?['turn']?['nickname'] == (widget.data['nickname'] ?? 'Guest') ? (details) {
+                                  String colorString = selectedColor.toString();
+                                  String valueString = colorString.split('(0x')[1].split(')')[0];
                                   _socket.emit('paint', {
                                     'details': {
                                       'dx': details.localPosition.dx,
                                       'dy': details.localPosition.dy,
                                     },
+                                    'color': valueString,
+                                    'strokeWidth': strokeWidth,
                                     'roomName': widget.data['name'],
                                   });
-                                },
-                                onPanEnd: (details) {
+                                } : null,
+                                onPanEnd: dataOfRoom?['turn']?['nickname'] == (widget.data['nickname'] ?? 'Guest') ? (details) {
                                   _socket.emit('paint', {
                                     'details': null,
                                     'roomName': widget.data['name'],
                                   });
-                                },
+                                } : null,
                                 child: SizedBox.expand(
                                   child: ClipRRect(
                                     borderRadius: const BorderRadius.all(
@@ -453,6 +475,37 @@ class _PaintScreenState extends State<PaintScreen> {
                                       color: selectedColor,
                                     ),
                                   ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        isEraser = !isEraser;
+                                        if (isEraser) {
+                                          selectedColor = Colors.white;
+                                          strokeWidth = 10;
+                                        } else {
+                                          selectedColor = Colors.black;
+                                          strokeWidth = 2;
+                                        }
+                                      });
+                                      String colorString = selectedColor.toString();
+                                      String valueString =
+                                          colorString.split('(0x')[1].split(')')[0];
+                                      Map colorMap = {
+                                        'color': valueString,
+                                        'roomName': dataOfRoom?['name']
+                                      };
+                                      _socket.emit('color-change', colorMap);
+                                      Map strokeMap = {
+                                        'value': strokeWidth,
+                                        'roomName': dataOfRoom?['name'],
+                                      };
+                                      _socket.emit('stroke-width', strokeMap);
+                                    },
+                                    icon: Icon(
+                                      isEraser ? Icons.edit : Icons.auto_fix_high,
+                                      color: isEraser ? Colors.red : Colors.grey,
+                                    ),
+                                  ),
                                   Expanded(
                                     child: Slider(
                                       min: 1,
@@ -460,6 +513,9 @@ class _PaintScreenState extends State<PaintScreen> {
                                       label: 'StrokeWidth $strokeWidth',
                                       value: strokeWidth,
                                       onChanged: (double value) {
+                                        setState(() {
+                                          strokeWidth = value;
+                                        });
                                         Map map = {
                                           'value': value,
                                           'roomName': dataOfRoom?['name'],

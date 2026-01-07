@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 var http = require("http");
 const app = express();
@@ -7,18 +8,59 @@ const mongoose = require("mongoose");
 const Room = require('./models/Room');
 const getWord = require('./api/getWord');
 
-var io = require("socket.io")(server);
+var io = require("socket.io")(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 //middleware
 app.use(express.json());
 
-const DB = "mongodb://localhost:27017";
+// Health check endpoint
+app.get('/', (req, res) => {
+    res.json({ status: 'DoodleIt Server is running!', timestamp: new Date() });
+});
+
+// Database check endpoint
+app.get('/db-status', async (req, res) => {
+    try {
+        const roomCount = await Room.countDocuments();
+        const rooms = await Room.find({}).select('name players.nickname currentRound');
+        res.json({ 
+            connected: mongoose.connection.readyState === 1,
+            database: mongoose.connection.name,
+            totalRooms: roomCount,
+            rooms: rooms
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Use environment variable for production, fallback to localhost for development
+const DB = process.env.MONGODB_URI || "mongodb://localhost:27017/doodleit";
+
+console.log('Attempting to connect to MongoDB at:', DB);
 
 mongoose.connect(DB).then(()=>{
-    console.log("connected successfully to MongoDB");
+    console.log("✅ Connected successfully to MongoDB");
+    console.log('📊 Database name:', mongoose.connection.name);
 }).catch((e)=>{
-    console.log(e);
+    console.error("❌ MongoDB connection error:", e.message);
+    console.log('\n🔧 Troubleshooting:');
+    console.log('1. Make sure MongoDB is running');
+    console.log('2. Check connection string:', DB);
 })
+
+mongoose.connection.on('error', (err) => {
+    console.error('MongoDB runtime error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected');
+});
 
 io.on('connection', (socket) => {
     console.log('connected successfully to socket');
@@ -26,11 +68,12 @@ io.on('connection', (socket) => {
     //on creating the room
     socket.on('create-game', async({nickname,name,occupancy,maxRounds}) => {
         try{
+            console.log(`📝 Creating room: ${name} by ${nickname}`);
             const existingRoom = await Room.findOne({name});
 
             // room already exists
             if(existingRoom){
-                console.log('Room with that name already exists:', name);
+                console.log('❌ Room with that name already exists:', name);
                 socket.emit('notCorrectGame' , 'room with that name already exists!');
                 return;
             }
@@ -49,24 +92,28 @@ io.on('connection', (socket) => {
                 isPartyLeader: true,
             }
             room.players.push(player);
-            console.log('Saving room:', room);
+            console.log('💾 Saving room to database:', {name: room.name, players: room.players.length});
 
             room = await room.save();
+            console.log('✅ Room saved successfully with ID:', room._id);
             socket.join(name);
             io.to(name).emit('updateRoom', room);
         }catch (e){
-            console.log(e);
+            console.error('❌ Error creating room:', e.message);
+            console.error(e);
+            socket.emit('notCorrectGame', 'Error creating room: ' + e.message);
         }
     });
 
     //on joining the room
     socket.on('join-game', async({nickname, name}) => {
         try {
+            console.log(`🚪 ${nickname} attempting to join room: ${name}`);
             let room = await Room.findOne({name});
 
             //room doesn't exists
             if(!room){
-                console.log("Room not found");
+                console.log("❌ Room not found:", name);
                 socket.emit('notCorrectGame' , 'please enter the valid room name');
                 return;
             }
@@ -78,30 +125,33 @@ io.on('connection', (socket) => {
                     nickname,
                 };
                 room.players.push(player);
-                console.log('updating room:', room);
+                console.log('💾 Updating room with new player:', {room: name, totalPlayers: room.players.length});
 
                 socket.join(name);
 
                 //room occupancy
                 if(room.players.length >= room.occupancy){
                     room.isJoin = false;
+                    console.log('🔒 Room is now full');
                 }
                 room.turn = room.players[room.turnIndex];
                 room = await room.save();
+                console.log('✅ Player joined successfully');
                 io.to(name).emit('updateRoom', room);
             }else{
-                console.log("room is already full");
+                console.log("❌ Room is already full:", name);
                 socket.emit('notCorrectGame' , 'room is already full');
             }
         } catch (e){
-            console.log(e);
+            console.error('❌ Error joining room:', e.message);
+            console.error(e);
         }
     });
 
 //white board sockets
     //on painting the screen
-    socket.on('paint', ({details, roomName}) => {
-        io.to(roomName).emit('points', {details:details});
+    socket.on('paint', ({details, color, strokeWidth, roomName}) => {
+        io.to(roomName).emit('points', {details: details, color: color, strokeWidth: strokeWidth});
     });
 
     //on changing the color
@@ -133,12 +183,35 @@ io.on('connection', (socket) => {
                     userPlayer[0].points += Math.round((200/data.timeTaken) * 10);
                 }
                 await room.save();
+                const newGuessedCount = data.guessedUserCtr + 1;
                 io.to(data.roomName).emit('msg',{
                     username: data.username,
                     msg: 'Guessed it!',
-                    guessedUserCtr : data.guessedUserCtr + 1,
+                    guessedUserCtr : newGuessedCount,
                 });
                 socket.emit('close-input', '');
+                
+                // Auto change turn when all players except drawer have guessed
+                if (newGuessedCount >= room.players.length - 1) {
+                    // Small delay to ensure message is displayed before turn change
+                    setTimeout(async () => {
+                        let updatedRoom = await Room.findOne({name: data.roomName});
+                        let idx = updatedRoom.turnIndex;
+                        if (idx+1 === updatedRoom.players.length){
+                            updatedRoom.currentRound += 1;
+                        }
+                        if (updatedRoom.currentRound <= updatedRoom.maxRounds){
+                            const word = getWord();
+                            updatedRoom.word = word;
+                            updatedRoom.turnIndex = (idx+1) % updatedRoom.players.length;
+                            updatedRoom.turn = updatedRoom.players[updatedRoom.turnIndex];
+                            updatedRoom = await updatedRoom.save();
+                            io.to(data.roomName).emit('change-turn', updatedRoom);
+                        }else{
+                            io.to(data.roomName).emit('show-leaderboard', updatedRoom.players);
+                        }
+                    }, 500);
+                }
             }else{
                 io.to(data.roomName).emit('msg',{
                     username: data.username,

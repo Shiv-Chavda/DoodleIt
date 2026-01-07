@@ -74,11 +74,11 @@ flutter:
   fonts:
    - family: USA
      fonts:
-       - asset: fonts/PlaywriteUSModern-VariableFont_wght.ttf
+       - asset: fonts/Playwrite_US_Modern/PlaywriteUSModern-VariableFont_wght.ttf
    - family: UK
      fonts:
-       - asset: fonts/PlaywriteGBS-VariableFont_wght.ttf
-       - asset: fonts/PlaywriteGBS-Italic-VariableFont_wght.ttf
+       - asset: fonts/Playwrite_GB_S/PlaywriteGBS-VariableFont_wght.ttf
+       - asset: fonts/Playwrite_GB_S/PlaywriteGBS-Italic-VariableFont_wght.ttf
          style: italic
   #
   # For details regarding fonts from package dependencies,
