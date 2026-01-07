@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:skribble_io/constants/colors.dart';
-import 'package:skribble_io/screens/paint_screen.dart';
-import 'package:skribble_io/widgets/create_join_btn.dart';
-import 'package:skribble_io/widgets/custom_dropdown_menu.dart';
-import 'package:skribble_io/widgets/custom_text_field.dart';
+import 'package:doodle_it/constants/colors.dart';
+import 'package:doodle_it/screens/paint_screen.dart';
+import 'package:doodle_it/widgets/create_join_btn.dart';
+import 'package:doodle_it/widgets/custom_dropdown_menu.dart';
+import 'package:doodle_it/widgets/custom_text_field.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key});

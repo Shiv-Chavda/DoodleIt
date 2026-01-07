@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:skribble_io/constants/colors.dart';
-import 'package:skribble_io/screens/home_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:doodle_it/constants/colors.dart';
+import 'package:doodle_it/screens/home_screen.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -12,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Skribble.io',
+      title: 'DoodleIt',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: backgroundColor,

@@ -4,12 +4,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:skribble_io/constants/colors.dart';
-import 'package:skribble_io/screens/final_leaderboard.dart';
-import 'package:skribble_io/screens/home_screen.dart';
-import 'package:skribble_io/screens/waiting_lobby_screen.dart';
-import 'package:skribble_io/sidebar/player_scoreboard_drawer.dart';
-import 'package:skribble_io/widgets/loader.dart';
+import 'package:doodle_it/constants/colors.dart';
+import 'package:doodle_it/constants/server_config.dart';
+import 'package:doodle_it/screens/final_leaderboard.dart';
+import 'package:doodle_it/screens/home_screen.dart';
+import 'package:doodle_it/screens/waiting_lobby_screen.dart';
+import 'package:doodle_it/sidebar/player_scoreboard_drawer.dart';
+import 'package:doodle_it/widgets/loader.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 import '../models/my_custom_painter.dart';
@@ -35,7 +36,7 @@ class PaintScreen extends StatefulWidget {
 class _PaintScreenState extends State<PaintScreen> {
   late IO.Socket _socket;
   Map<String, dynamic>? dataOfRoom;
-  List<TouchPoints> points = [];
+  List<TouchPoints?> points = [];
   StrokeCap strokeType = StrokeCap.round;
   Color selectedColor = Colors.black;
   double opacity = 1;
@@ -96,7 +97,7 @@ class _PaintScreenState extends State<PaintScreen> {
   void connect() async {
     print("Connecting to server...");
     try {
-      _socket = IO.io('http://192.168.29.149:3000', <String, dynamic>{
+      _socket = IO.io(ServerConfig.serverUrl, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
       });
@@ -162,6 +163,10 @@ class _PaintScreenState extends State<PaintScreen> {
                     ..color = selectedColor.withOpacity(opacity),
                 ),
               );
+            });
+          } else {
+            setState(() {
+              points.add(null);
             });
           }
         });

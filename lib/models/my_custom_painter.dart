@@ -1,11 +1,11 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:skribble_io/models/touch_points.dart';
+import 'package:doodle_it/models/touch_points.dart';
 
 class MyCustomPainter extends CustomPainter {
   MyCustomPainter({required this.pointsList});
-  List<TouchPoints> pointsList;
+  List<TouchPoints?> pointsList;
   List<Offset> offsetPoints = [];
 
   @override
@@ -20,16 +20,16 @@ class MyCustomPainter extends CustomPainter {
     for (int i = 0; i < pointsList.length - 1; i++) {
       if (pointsList[i] != null && pointsList[i + 1] != null) {
         //Line
-        canvas.drawLine(pointsList[i].points, pointsList[i + 1].points,
-            pointsList[i].paint);
+        canvas.drawLine(pointsList[i]!.points, pointsList[i + 1]!.points,
+            pointsList[i]!.paint);
       } else if (pointsList[i] != null && pointsList[i + 1] == null) {
         //Point
         offsetPoints.clear();
-        offsetPoints.add(pointsList[i].points);
+        offsetPoints.add(pointsList[i]!.points);
         offsetPoints.add(Offset(
-            pointsList[i].points.dx + 0.1, pointsList[i].points.dy + 0.1));
+            pointsList[i]!.points.dx + 0.1, pointsList[i]!.points.dy + 0.1));
         canvas.drawPoints(
-            ui.PointMode.points, offsetPoints, pointsList[i].paint);
+            ui.PointMode.points, offsetPoints, pointsList[i]!.paint);
       }
     }
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skribble_io/constants/colors.dart';
+import 'package:doodle_it/constants/colors.dart';
 
 class CustomDropdownMenu extends StatefulWidget {
   CustomDropdownMenu({

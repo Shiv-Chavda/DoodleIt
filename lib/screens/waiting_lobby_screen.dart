@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:skribble_io/constants/colors.dart';
-import 'package:skribble_io/widgets/loader.dart';
+import 'package:doodle_it/constants/colors.dart';
+import 'package:doodle_it/widgets/loader.dart';
 
 class WaitingLobbyScreen extends StatefulWidget {
   final int occupancy;

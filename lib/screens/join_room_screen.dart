@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:skribble_io/screens/paint_screen.dart';
-import 'package:skribble_io/widgets/create_join_btn.dart';
+import 'package:doodle_it/screens/paint_screen.dart';
+import 'package:doodle_it/widgets/create_join_btn.dart';
 
 import '../constants/colors.dart';
 import '../widgets/custom_text_field.dart';

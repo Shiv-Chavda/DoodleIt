@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:skribble_io/constants/colors.dart';
+import 'package:doodle_it/constants/colors.dart';
 
 class Loader extends StatelessWidget {
   const Loader({super.key});

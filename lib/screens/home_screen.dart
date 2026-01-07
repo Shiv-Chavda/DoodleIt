@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:skribble_io/screens/create_room_screen.dart';
-import 'package:skribble_io/screens/join_room_screen.dart';
-import 'package:skribble_io/widgets/create_join_btn.dart';
+import 'package:doodle_it/screens/create_room_screen.dart';
+import 'package:doodle_it/screens/join_room_screen.dart';
+import 'package:doodle_it/widgets/create_join_btn.dart';
 
 import '../constants/colors.dart';
 
@@ -27,12 +27,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
+      body: Container(
+        decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage("assets/background.jpg"),
             fit: BoxFit.cover,
+            onError: (exception, stackTrace) {
+              print('Error loading background image: $exception');
+            },
           ),
+          color: backgroundColor,
         ),
         child: Center(
           child: Padding(
@@ -47,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontFamily: 'UK',
                     fontSize: 30,
                     fontWeight: FontWeight.w700,
+                    color: Colors.black,
                   ),
                 ),
                 Row(
